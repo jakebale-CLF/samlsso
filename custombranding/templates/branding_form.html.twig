@@ -1,0 +1,135 @@
+{#
+ # customBranding plugin for GLPI - per entity branding form.
+ # Empty fields inherit the value of the parent entity.
+ #}
+
+{% set disabled = can_edit ? '' : 'disabled' %}
+
+<form method="post" action="{{ form_url }}" enctype="multipart/form-data" class="custombranding-form" id="custombranding-form-{{ entities_id }}">
+    <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token() }}" />
+    <input type="hidden" name="entities_id" value="{{ entities_id }}" />
+
+    <div class="alert alert-info mb-3">
+        <i class="ti ti-info-circle me-1"></i>
+        {% if is_root %}
+            {{ __('Branding of the root entity is used on the login page and by every sub-entity that does not override it.', 'custombranding') }}
+        {% else %}
+            {{ __('Leave a field empty to inherit it from the parent entity. Inherited values are shown in grey.', 'custombranding') }}
+        {% endif %}
+    </div>
+
+    {# ---------------------------------------------------------------- General #}
+    <div class="card mb-3">
+        <div class="card-header"><h3 class="card-title"><i class="ti ti-forms me-2"></i>{{ __('General', 'custombranding') }}</h3></div>
+        <div class="card-body">
+            <div class="row mb-2">
+                <label class="col-md-3 col-form-label" for="custombranding_page_title">{{ __('Application name (browser tab title)', 'custombranding') }}</label>
+                <div class="col-md-6">
+                    <input type="text" class="form-control" id="custombranding_page_title" name="page_title" maxlength="255"
+                           value="{{ own.page_title ?? '' }}" placeholder="{{ inherited.page_title ?? 'GLPI' }}" {{ disabled }} />
+                    <div class="form-hint">{{ __('Replaces "GLPI" at the end of the browser tab title.', 'custombranding') }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ----------------------------------------------------------------- Images #}
+    <div class="card mb-3">
+        <div class="card-header"><h3 class="card-title"><i class="ti ti-photo me-2"></i>{{ __('Logos and images', 'custombranding') }}</h3></div>
+        <div class="card-body">
+            {% for field, label in file_fields %}
+                <div class="row mb-3 align-items-center">
+                    <label class="col-md-3 col-form-label" for="custombranding_{{ field }}">{{ label }}</label>
+                    <div class="col-md-2">
+                        {% if preview_urls[field] is defined %}
+                            <div class="p-2 border rounded text-center" style="background: repeating-conic-gradient(#eee 0 25%, #fff 0 50%) 50% / 16px 16px;">
+                                <img src="{{ preview_urls[field] }}" alt="{{ label }}" style="max-height: 60px; max-width: 100%;" />
+                            </div>
+                        {% elseif inherited[field] is defined %}
+                            <span class="text-muted"><i class="ti ti-arrow-up-left"></i> {{ __('Inherited', 'custombranding') }}</span>
+                        {% else %}
+                            <span class="text-muted">{{ __('GLPI default', 'custombranding') }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-5">
+                        <input type="file" class="form-control" id="custombranding_{{ field }}" name="{{ field }}" accept="{{ accept }}" {{ disabled }} />
+                        {% if preview_urls[field] is defined %}
+                            <label class="form-check mt-1 mb-0">
+                                <input type="checkbox" class="form-check-input" name="_delete_{{ field }}" value="1" {{ disabled }} />
+                                <span class="form-check-label">{{ __('Remove (inherit again)', 'custombranding') }}</span>
+                            </label>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+            <div class="form-hint">
+                {{ __('PNG, JPEG, GIF, WebP, SVG or ICO, up to %d MB. Recommended: main logo 200x110, reduced logo 100x100, login logo 400x220, favicon 32x32 or 64x64.', 'custombranding')|format(max_size_mb) }}
+            </div>
+        </div>
+    </div>
+
+    {# ----------------------------------------------------------------- Colours #}
+    <div class="card mb-3">
+        <div class="card-header"><h3 class="card-title"><i class="ti ti-palette me-2"></i>{{ __('Colours', 'custombranding') }}</h3></div>
+        <div class="card-body">
+            {% for field, label in color_fields %}
+                {% set value = own[field] ?? '' %}
+                {% set fallback = inherited[field] ?? '' %}
+                <div class="row mb-2">
+                    <label class="col-md-3 col-form-label" for="custombranding_{{ field }}">{{ label }}</label>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <input type="color" class="form-control form-control-color custombranding-picker"
+                                   data-target="custombranding_{{ field }}" value="{{ value ?: (fallback ?: '#ffffff') }}"
+                                   title="{{ __('Pick a colour', 'custombranding') }}" {{ disabled }} />
+                            <input type="text" class="form-control" id="custombranding_{{ field }}" name="{{ field }}"
+                                   value="{{ value }}" placeholder="{{ fallback ?: __('GLPI default', 'custombranding') }}"
+                                   pattern="#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})" maxlength="7" {{ disabled }} />
+                            {% if can_edit %}
+                                <button type="button" class="btn btn-outline-secondary custombranding-clear" data-target="custombranding_{{ field }}"
+                                        title="{{ __('Clear (inherit)', 'custombranding') }}"><i class="ti ti-x"></i></button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            <div class="form-hint">{{ __('Menu text colour is computed automatically for readability when left empty.', 'custombranding') }}</div>
+        </div>
+    </div>
+
+    {# -------------------------------------------------------------- Custom CSS #}
+    <div class="card mb-3">
+        <div class="card-header"><h3 class="card-title"><i class="ti ti-code me-2"></i>{{ __('Custom CSS', 'custombranding') }}</h3></div>
+        <div class="card-body">
+            <textarea class="form-control font-monospace" name="custom_css" rows="10" spellcheck="false"
+                      placeholder="{{ inherited.custom_css is defined ? __('Inherited from parent entity', 'custombranding') : '.navbar { }' }}" {{ disabled }}>{{ own.custom_css ?? '' }}</textarea>
+            <div class="form-hint">{{ __('Applied after the generated branding, on every page including the login page (root entity). @import and expression() are stripped.', 'custombranding') }}</div>
+        </div>
+    </div>
+
+    {% if can_edit %}
+        <div class="d-flex justify-content-end">
+            <button type="submit" name="save" value="1" class="btn btn-primary">
+                <i class="ti ti-device-floppy me-1"></i>{{ _x('button', 'Save') }}
+            </button>
+        </div>
+    {% endif %}
+</form>
+
+<script>
+    (() => {
+        const form = document.getElementById('custombranding-form-{{ entities_id }}');
+        form.querySelectorAll('.custombranding-picker').forEach((picker) => {
+            const text = document.getElementById(picker.dataset.target);
+            picker.addEventListener('input', () => { text.value = picker.value; });
+            text.addEventListener('input', () => {
+                if (/^#[0-9a-f]{6}$/i.test(text.value)) {
+                    picker.value = text.value;
+                }
+            });
+        });
+        form.querySelectorAll('.custombranding-clear').forEach((button) => {
+            button.addEventListener('click', () => { document.getElementById(button.dataset.target).value = ''; });
+        });
+    })();
+</script>
