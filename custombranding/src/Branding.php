@@ -30,7 +30,14 @@ use Session;
  */
 class Branding extends CommonDBTM
 {
-    public static $rightname = 'entity';
+    /**
+     * Right checked to see and edit branding.
+     *
+     * Not declared as static::$rightname on purpose: CommonGLPI types that
+     * property as `string` on GLPI 12 but not on GLPI 11, and PHP refuses a
+     * redeclaration that does not match the parent on either version.
+     */
+    public const RIGHTNAME = 'entity';
 
     /** Per-request cache of resolved branding, keyed by entity id. */
     private static array $resolvedCache = [];
@@ -68,7 +75,7 @@ class Branding extends CommonDBTM
 
     public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0)
     {
-        if ($item instanceof Entity && Session::haveRight(self::$rightname, READ)) {
+        if ($item instanceof Entity && Session::haveRight(self::RIGHTNAME, READ)) {
             return self::createTabEntry(self::getTypeName(), 0, $item::getType(), self::getIcon());
         }
         return '';
@@ -117,6 +124,9 @@ class Branding extends CommonDBTM
             'preview_urls'  => $previewUrls,
             'accept'        => implode(',', array_keys(BrandingResolver::ALLOWED_MIMES)),
             'max_size_mb'   => BrandingResolver::MAX_UPLOAD_SIZE / 1024 / 1024,
+            // GLPI 11 needs a CSRF token in forms; GLPI 12 validates Sec-Fetch-Site/Origin
+            // headers instead and drops the token helpers.
+            'csrf_token'    => method_exists(Session::class, 'getNewCSRFToken') ? Session::getNewCSRFToken() : null,
         ]);
     }
 

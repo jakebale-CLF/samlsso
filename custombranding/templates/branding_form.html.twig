@@ -6,7 +6,9 @@
 {% set disabled = can_edit ? '' : 'disabled' %}
 
 <form method="post" action="{{ form_url }}" enctype="multipart/form-data" class="custombranding-form" id="custombranding-form-{{ entities_id }}">
-    <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token() }}" />
+    {% if csrf_token %}
+        <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token }}" />
+    {% endif %}
     <input type="hidden" name="entities_id" value="{{ entities_id }}" />
 
     <div class="alert alert-info mb-3">

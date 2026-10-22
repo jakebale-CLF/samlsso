@@ -19,13 +19,12 @@
  **/
 
 use Glpi\Http\Firewall;
-use Glpi\Http\SessionManager;
 use Glpi\Plugin\Hooks;
 use GlpiPlugin\Custombranding\Branding;
 
 define('PLUGIN_CUSTOMBRANDING_VERSION', '1.0.0');
 define('PLUGIN_CUSTOMBRANDING_MIN_GLPI', '11.0.0');
-define('PLUGIN_CUSTOMBRANDING_MAX_GLPI', '11.99.99');
+define('PLUGIN_CUSTOMBRANDING_MAX_GLPI', '12.99.99');
 
 /**
  * Runs before the session is started: declare the public endpoints.
@@ -42,15 +41,13 @@ function plugin_init_custombranding(): void
 {
     global $PLUGIN_HOOKS;
 
-    $PLUGIN_HOOKS['csrf_compliant']['custombranding'] = true;
-
     if (!Plugin::isPluginActive('custombranding')) {
         return;
     }
 
     Plugin::registerClass(Branding::class, ['addtabon' => [Entity::class]]);
 
-    if (Session::haveRight('entity', UPDATE)) {
+    if (Session::haveRight(Branding::RIGHTNAME, UPDATE)) {
         $PLUGIN_HOOKS['config_page']['custombranding'] = 'front/config.php';
     }
 

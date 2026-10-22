@@ -23,7 +23,7 @@ White-label GLPI 11 per entity, in the spirit of the GLPI Network *Branding* plu
 
 ## Requirements
 
-* GLPI 11.0.x
+* GLPI 11.0.x or 12.0.x
 * PHP 8.2+ with `fileinfo`
 
 ## Install
